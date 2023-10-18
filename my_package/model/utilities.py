@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib
 import scipy as sp
 import cf_units
+import xarray as xr
 
 def write_emission(cube,outpath,name ):
     ats = cube.attributes
@@ -546,3 +547,28 @@ def panoply():
             '#800000']
     my_cmap = matplotlib.colors.ListedColormap(my_color, name='panoply')
     return(my_cmap)
+
+def calc_tropopause(temperature):
+    import tropo
+    #Input the temperature (time, lon,lat,lev)
+    #The vertical level should be pressure
+    plimu=45000
+    pliml=7500
+    plimlex=7500
+    dofill=True
+    #transpose the dimension of temperature to match the fortran code
+    temperature = temperature.transpose('time', 'lon', 'lat', 'plev')
+    ntime, nlon,nlat,nlev = temperature.shape
+    pres = temperature['plev']/100 #pressure in hPa
+
+    #xarray for result
+    dims = ('time', 'lon', 'lat')
+    coords = {dim: temperature.coords[dim] for dim in dims}
+    # Create an empty DataArray with the specified dimensions and coordinates
+    tp = xr.DataArray(np.nan, dims=dims, coords=coords,name='tp')
+
+    for time in range(ntime):
+        t = temperature.isel(time=time)
+        temptp,tperr= tropo.tropo(t,pres,plimu,pliml,plimlex,dofill)
+        tp[dict(time=time)] = temptp    
+    return tp
