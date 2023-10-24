@@ -387,3 +387,10 @@ def calc_tropopause(temperature):
         temptp,tperr= tropo.tropo(t,pres,plimu,pliml,plimlex,dofill)
         tp[dict(time=time)] = temptp    
     return tp
+
+def xr_area_mean(ds):
+    "calc the area weighted mean of an xarray array"
+    ds_weighted = ds.weighted(np.cos(np.deg2rad(ds.lat)))
+    mean = ds_weighted.mean(dim=['lat','lon'])
+    return (mean)
+
