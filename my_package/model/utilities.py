@@ -394,3 +394,24 @@ def xr_area_mean(ds):
     mean = ds_weighted.mean(dim=['lat','lon'])
     return (mean)
 
+def running_mean(ds,years=21):
+    #calc 21 years running mean for each month
+    monthly_means = []
+    for month in range(1, 13):
+        # Subset the data for the specific month
+        subset = ds.sel(time=ds['time.month'] == month)
+        # Compute the 21-year rolling mean centered
+        window_size = years  # 21 years
+        rolling_mean = subset.rolling(time=window_size, center=True).mean()
+        # Replace NaNs for the first 10 years with the value from the 11th year
+        center_year = years//2  #10
+        rolling_mean[:center_year] = rolling_mean[center_year]
+        # #do nothing for the last 10 years
+        # # Replace NaNs for the last 10 years with the value from the 11th last year
+        # rolling_mean[-10:] = rolling_mean[-11]
+        monthly_means.append(rolling_mean)
+        
+    # Concatenate monthly rolling means
+    monthly_means = xr.concat(monthly_means, dim="time")
+    monthly_means = monthly_means.sortby('time')
+    return (monthly_means)
