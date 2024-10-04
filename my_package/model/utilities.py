@@ -389,10 +389,36 @@ def calc_tropopause(temperature):
     return tp
 
 def xr_area_mean(ds):
-    "calc the area weighted mean of an xarray array"
-    ds_weighted = ds.weighted(np.cos(np.deg2rad(ds.lat)))
-    mean = ds_weighted.mean(dim=['lat','lon'])
-    return (mean)
+    """
+    Calculate the area-weighted mean of an xarray dataset,
+    handling different possible names for latitude and longitude.
+    """
+    # Check for latitude and longitude names
+    lat_name = None
+    lon_name = None
+    
+    if 'lat' in ds.coords:
+        lat_name = 'lat'
+    elif 'latitude' in ds.coords:
+        lat_name = 'latitude'
+    
+    if 'lon' in ds.coords:
+        lon_name = 'lon'
+    elif 'longitude' in ds.coords:
+        lon_name = 'longitude'
+    
+    if lat_name is None or lon_name is None:
+        raise ValueError("Dataset must contain either 'lat'/'lon' or 'latitude'/'longitude' coordinates.")
+    
+    # Calculate weights using latitude
+    ds_weighted = ds.weighted(np.cos(np.deg2rad(ds[lat_name])))
+    
+    # Calculate the mean across latitude and longitude
+    mean = ds_weighted.mean(dim=[lat_name, lon_name])
+    
+    return mean
+
+
 
 def running_mean(ds,years=21):
     #calc 21 years running mean for each month
